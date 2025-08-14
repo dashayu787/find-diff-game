@@ -43,4 +43,36 @@ function create() {
     for (let i = 0; i < differencePoints.length; i++) {
       const pt = differencePoints[i];
       const dx = Math.abs(clickedX - pt.x);
-      const dy
+      const dyTop = Math.abs(clickedY - pt.y);
+      const dyBottom = Math.abs(clickedY - (pt.y + 360));
+
+      if (dx < 25 && (dyTop < 25 || dyBottom < 25) && !foundPoints.includes(i)) {
+        foundPoints.push(i);
+        score++;
+        scoreText.setText('得分：' + score);
+
+        this.add.circle(pt.x, pt.y, 10, 0xff0000).setAlpha(0.6);
+        this.add.circle(pt.x, pt.y + 360, 10, 0xff0000).setAlpha(0.6);
+      }
+    }
+  });
+
+  this.time.addEvent({
+    delay: 1000,
+    callback: () => {
+      timeLeft--;
+      timerText.setText('时间：' + timeLeft);
+      if (timeLeft <= 0) {
+        this.input.off('pointerdown');
+        this.add.text(80, 350, '游戏结束！得分：' + score, {
+          fontSize: '20px', fill: '#000'
+        });
+      }
+    },
+    loop: true
+  });
+}
+
+function update() {
+  // 空函数，用于未来扩展
+}
