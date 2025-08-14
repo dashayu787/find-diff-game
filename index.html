@@ -11,13 +11,14 @@
       text-align: center;
       margin: 0;
       padding: 0;
-      background: #e3f2fd;
+      background: #f9fbe7;
       color: #1a237e;
     }
     h1 {
-      background-color: #bbdefb;
+      background-color: #c8e6c9;
       padding: 10px;
       margin: 0;
+      font-size: 24px;
     }
     #game-container {
       margin: 0 auto;
@@ -53,7 +54,7 @@
     function preload() {
       this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
       this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
-      this.load.image('spark', 'https://labs.phaser.io/assets/particles/yellow.png');
+      this.load.image('spark', 'https://labs.phaser.io/assets/particles/blue.png');
     }
 
     function create() {
@@ -61,8 +62,12 @@
       this.add.image(180, 125, 'topImage').setDisplaySize(360, 250);
       this.add.image(180, 375, 'bottomImage').setDisplaySize(360, 250);
 
-      timerText = this.add.text(60, 260, 'Tempo: 60', { fontSize: '18px', fill: '#1a237e' });
-      scoreText = this.add.text(220, 260, 'Pontuação: 0', { fontSize: '18px', fill: '#1a237e' });
+      timerText = this.add.text(40, 260, 'Tempo: 60', {
+        fontSize: '20px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
+      }).setOrigin(0);
+      scoreText = this.add.text(210, 260, 'Pontuação: 0', {
+        fontSize: '20px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
+      }).setOrigin(0);
 
       this.input.on('pointerdown', (pointer) => {
         const clickedX = pointer.x;
@@ -92,29 +97,32 @@
             this.input.off('pointerdown');
 
             const endText = this.add.text(180, 290, '🎉 Fim de jogo!\nPontuação: ' + score + ' 🎉', {
-              fontSize: '22px',
-              fill: '#d32f2f',
+              fontSize: '24px',
+              fill: '#d84315',
+              backgroundColor: '#ffe082',
               fontStyle: 'bold',
-              align: 'center'
+              align: 'center',
+              padding: 10
             }).setOrigin(0.5);
 
             this.tweens.add({
               targets: endText,
               scale: { from: 0, to: 1.2 },
               alpha: { from: 0, to: 1 },
-              duration: 500,
+              duration: 600,
               ease: 'Bounce.easeOut'
             });
 
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 6; i++) {
               const emitter = this.add.particles(0, 0, 'spark', {
-                x: Phaser.Math.Between(60, 300),
-                y: Phaser.Math.Between(100, 450),
-                speed: { min: 100, max: 300 },
+                x: Phaser.Math.Between(40, 320),
+                y: Phaser.Math.Between(80, 480),
+                speed: { min: 150, max: 350 },
                 angle: { min: 0, max: 360 },
-                scale: { start: 0.6, end: 0 },
-                lifespan: 1000,
-                quantity: 20,
+                scale: { start: 0.8, end: 0 },
+                tint: [0xff4081, 0x7c4dff, 0x448aff, 0x00e676],
+                lifespan: 1200,
+                quantity: 25,
                 blendMode: 'ADD'
               });
               fireworks.push(emitter);
