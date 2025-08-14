@@ -3,39 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <title>97 Encontre as Diferenças</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
+    html, body {
       margin: 0;
       padding: 0;
-      background: #f9fbe7;
-      color: #1a237e;
-    }
-    h1 {
-      background-color: #c8e6c9;
-      padding: 10px;
-      margin: 0;
-      font-size: 24px;
+      overflow: hidden;
+      background: #f0f0f0;
+      height: 100%;
+      font-family: Arial, sans-serif;
     }
     #game-container {
-      margin: 0 auto;
+      width: 100vw;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
     }
   </style>
 </head>
 <body>
-  <h1>97 Encontre as Diferenças</h1>
   <div id="game-container"></div>
-
   <script>
+    const BASE_WIDTH = 360;
+    const BASE_HEIGHT = 720;
+
     const config = {
       type: Phaser.AUTO,
-      width: 360,
-      height: 550,
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: BASE_WIDTH,
+        height: BASE_HEIGHT
+      },
       parent: 'game-container',
       scene: { preload, create, update }
     };
@@ -46,47 +49,60 @@
     let score = 0;
     let differencePoints = [
       { x: 100, y: 120 },
-      { x: 250, y: 200 },
-      { x: 180, y: 60 }
+      { x: 250, y: 300 },
+      { x: 180, y: 180 }
     ];
     let foundPoints = [];
-    let fireworks = [];
 
     const game = new Phaser.Game(config);
 
     function preload() {
       this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
       this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
-      this.load.image('spark', 'https://labs.phaser.io/assets/particles/blue.png');
     }
 
     function create() {
       const scene = this;
-      this.add.image(180, 125, 'topImage').setDisplaySize(360, 250);
-      this.add.image(180, 375, 'bottomImage').setDisplaySize(360, 250);
+      const sw = this.scale.width;
+      const sh = this.scale.height;
 
-      timerText = this.add.text(40, 260, 'Tempo: 60', {
-        fontSize: '20px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
+      const scaleX = sw / BASE_WIDTH;
+      const scaleY = sh / BASE_HEIGHT;
+
+      this.add.image(sw / 2, sh * 0.25, 'topImage')
+          .setDisplaySize(sw, sh * 0.45);
+
+      this.add.image(sw / 2, sh * 0.75, 'bottomImage')
+          .setDisplaySize(sw, sh * 0.45);
+
+      timerText = this.add.text(sw * 0.1, sh * 0.48, 'Tempo: 60', {
+        fontSize: '18px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
       }).setOrigin(0);
-      scoreText = this.add.text(210, 260, 'Pontuação: 0', {
-        fontSize: '20px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
+
+      scoreText = this.add.text(sw * 0.55, sh * 0.48, 'Pontuação: 0', {
+        fontSize: '18px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
       }).setOrigin(0);
 
       this.input.on('pointerdown', (pointer) => {
-        const clickedX = pointer.x;
-        const clickedY = pointer.y;
+        const clickedX = pointer.x / scaleX;
+        const clickedY = pointer.y / scaleY;
+
         for (let i = 0; i < differencePoints.length; i++) {
           const pt = differencePoints[i];
           const dx = Math.abs(clickedX - pt.x);
           const dyTop = Math.abs(clickedY - pt.y);
-          const dyBottom = Math.abs(clickedY - (pt.y + 250));
+          const dyBottom = Math.abs(clickedY - (pt.y + 360));
 
           if (dx < 25 && (dyTop < 25 || dyBottom < 25) && !foundPoints.includes(i)) {
             foundPoints.push(i);
             score++;
             scoreText.setText('Pontuação: ' + score);
-            this.add.circle(pt.x, pt.y, 10, 0xff0000).setAlpha(0.6);
-            this.add.circle(pt.x, pt.y + 250, 10, 0xff0000).setAlpha(0.6);
+
+            const drawX = pt.x * scaleX;
+            const drawY = pt.y * scaleY;
+
+            this.add.circle(drawX, drawY, 10 * scaleX, 0xff0000).setAlpha(0.6);
+            this.add.circle(drawX, drawY + sh * 0.5, 10 * scaleX, 0xff0000).setAlpha(0.6);
           }
         }
       });
@@ -98,14 +114,8 @@
           timerText.setText('Tempo: ' + timeLeft);
           if (timeLeft <= 0) {
             this.input.off('pointerdown');
-
-            const endText = this.add.text(180, 290, '🎉 Fim de jogo!\nPontuação: ' + score + ' 🎉', {
-              fontSize: '24px',
-              fill: '#d84315',
-              backgroundColor: '#ffe082',
-              fontStyle: 'bold',
-              align: 'center',
-              padding: 10
+            const endText = this.add.text(sw / 2, sh * 0.5, '🎉 Fim de jogo!\nPontuação: ' + score + ' 🎉', {
+              fontSize: '22px', fill: '#d84315', backgroundColor: '#ffe082', align: 'center', padding: 10
             }).setOrigin(0.5);
 
             this.tweens.add({
@@ -115,21 +125,6 @@
               duration: 600,
               ease: 'Bounce.easeOut'
             });
-
-            for (let i = 0; i < 6; i++) {
-              const emitter = this.add.particles(0, 0, 'spark', {
-                x: Phaser.Math.Between(40, 320),
-                y: Phaser.Math.Between(80, 480),
-                speed: { min: 150, max: 350 },
-                angle: { min: 0, max: 360 },
-                scale: { start: 0.8, end: 0 },
-                tint: [0xff4081, 0x7c4dff, 0x448aff, 0x00e676],
-                lifespan: 1200,
-                quantity: 25,
-                blendMode: 'ADD'
-              });
-              fireworks.push(emitter);
-            }
           }
         },
         loop: true
