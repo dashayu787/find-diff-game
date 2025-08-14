@@ -1,14 +1,31 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>大家来找茬小游戏</title>
+  <title>97 Encontre as Diferenças</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background: #e3f2fd;
+      color: #1a237e;
+    }
+    h1 {
+      background-color: #bbdefb;
+      padding: 10px;
+      margin: 0;
+    }
+    #game-container {
+      margin: 0 auto;
+    }
+  </style>
 </head>
 <body>
-  <h1>大家来找茬小游戏</h1>
+  <h1>97 Encontre as Diferenças</h1>
   <div id="game-container"></div>
   <script>
     const config = {
@@ -29,19 +46,23 @@
       { x: 180, y: 60 }
     ];
     let foundPoints = [];
+    let fireworks = [];
 
     const game = new Phaser.Game(config);
 
     function preload() {
       this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
       this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
+      this.load.image('spark', 'https://labs.phaser.io/assets/particles/yellow.png');
     }
 
     function create() {
+      const scene = this;
       this.add.image(180, 125, 'topImage').setDisplaySize(360, 250);
       this.add.image(180, 375, 'bottomImage').setDisplaySize(360, 250);
-      timerText = this.add.text(20, 10, '时间：60', { fontSize: '18px', fill: '#000' });
-      scoreText = this.add.text(260, 10, '得分：0', { fontSize: '18px', fill: '#000' });
+
+      timerText = this.add.text(60, 260, 'Tempo: 60', { fontSize: '18px', fill: '#1a237e' });
+      scoreText = this.add.text(220, 260, 'Pontuação: 0', { fontSize: '18px', fill: '#1a237e' });
 
       this.input.on('pointerdown', (pointer) => {
         const clickedX = pointer.x;
@@ -55,7 +76,7 @@
           if (dx < 25 && (dyTop < 25 || dyBottom < 25) && !foundPoints.includes(i)) {
             foundPoints.push(i);
             score++;
-            scoreText.setText('得分：' + score);
+            scoreText.setText('Pontuação: ' + score);
             this.add.circle(pt.x, pt.y, 10, 0xff0000).setAlpha(0.6);
             this.add.circle(pt.x, pt.y + 250, 10, 0xff0000).setAlpha(0.6);
           }
@@ -66,12 +87,38 @@
         delay: 1000,
         callback: () => {
           timeLeft--;
-          timerText.setText('时间：' + timeLeft);
+          timerText.setText('Tempo: ' + timeLeft);
           if (timeLeft <= 0) {
             this.input.off('pointerdown');
-            this.add.text(100, 270, '游戏结束！得分：' + score, {
-              fontSize: '20px', fill: '#000'
+
+            const endText = this.add.text(180, 290, '🎉 Fim de jogo!\nPontuação: ' + score + ' 🎉', {
+              fontSize: '22px',
+              fill: '#d32f2f',
+              fontStyle: 'bold',
+              align: 'center'
+            }).setOrigin(0.5);
+
+            this.tweens.add({
+              targets: endText,
+              scale: { from: 0, to: 1.2 },
+              alpha: { from: 0, to: 1 },
+              duration: 500,
+              ease: 'Bounce.easeOut'
             });
+
+            for (let i = 0; i < 5; i++) {
+              const emitter = this.add.particles(0, 0, 'spark', {
+                x: Phaser.Math.Between(60, 300),
+                y: Phaser.Math.Between(100, 450),
+                speed: { min: 100, max: 300 },
+                angle: { min: 0, max: 360 },
+                scale: { start: 0.6, end: 0 },
+                lifespan: 1000,
+                quantity: 20,
+                blendMode: 'ADD'
+              });
+              fireworks.push(emitter);
+            }
           }
         },
         loop: true
