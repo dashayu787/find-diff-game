@@ -73,7 +73,6 @@
     const game = new Phaser.Game(config);
 
     function preload() {
-      // 请确保两张图均为 1080×907
       this.load.image('topImage',    'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/97a.png');
       this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/97b.png');
 
