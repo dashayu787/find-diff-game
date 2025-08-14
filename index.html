@@ -73,21 +73,22 @@
       const scaleX = sw / BASE_WIDTH;
       const scaleY = sh / BASE_HEIGHT;
 
-      this.add.image(sw / 2, sh * 0.25, 'topImage')
-          .setDisplaySize(sw, sh * 0.45);
+      this.add.image(sw / 2, sh * 0.21, 'topImage')
+          .setDisplaySize(sw, sh * 0.42);
 
       this.add.image(sw / 2, sh * 0.75, 'bottomImage')
-          .setDisplaySize(sw, sh * 0.45);
+          .setDisplaySize(sw, sh * 0.42);
 
-      timerText = this.add.text(sw * 0.05, sh * 0.48, 'Tempo: 60', {
+      // 顶部状态栏
+      timerText = this.add.text(sw * 0.05, sh * 0.46, 'Tempo: 60', {
         fontSize: '16px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
       }).setOrigin(0);
 
-      titleText = this.add.text(sw * 0.5, sh * 0.48, '97 Diferenças', {
+      titleText = this.add.text(sw * 0.5, sh * 0.46, '97 Diferenças', {
         fontSize: '18px', fill: '#1a237e', backgroundColor: '#bbdefb', padding: 6
       }).setOrigin(0.5);
 
-      scoreText = this.add.text(sw * 0.95, sh * 0.48, 'Pontuação: 0', {
+      scoreText = this.add.text(sw * 0.95, sh * 0.46, 'Pontuação: 0', {
         fontSize: '16px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
       }).setOrigin(1, 0);
 
@@ -126,14 +127,6 @@
             const endText = this.add.text(sw / 2, sh * 0.5, '🎉 Fim de jogo!\nPontuação: ' + score + ' 🎉', {
               fontSize: '22px', fill: '#ffffff', backgroundColor: '#ff5252', align: 'center', padding: 10
             }).setOrigin(0.5);
-
-            this.tweens.add({
-              targets: endText,
-              scale: { from: 0, to: 1.2 },
-              alpha: { from: 0, to: 1 },
-              duration: 600,
-              ease: 'Bounce.easeOut'
-            });
 
             // 添加礼花粒子效果
             const particles = this.add.particles('flares');
