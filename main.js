@@ -1,82 +1,205 @@
-const config = {
-  type: Phaser.AUTO,
-  width: 360,
-  height: 550,
-  parent: 'game-container',
-  scene: {
-    preload,
-    create,
-    update
-  }
-};
-
-let timerText;
-let scoreText;
-let timeLeft = 60;
-let score = 0;
-
-let differencePoints = [
-  { x: 100, y: 120 },
-  { x: 250, y: 200 },
-  { x: 180, y: 60 }
-];
-let foundPoints = [];
-
-const game = new Phaser.Game(config);
-
-function preload() {
-  this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png');
-  this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png');
-}
-
-function create() {
-  // 上图（Y=125）
-  this.add.image(180, 125, 'topImage').setDisplaySize(360, 250);
-  // 下图（Y=375）
-  this.add.image(180, 375, 'bottomImage').setDisplaySize(360, 250);
-
-  // 文本
-  timerText = this.add.text(20, 10, '时间：60', { fontSize: '18px', fill: '#000' });
-  scoreText = this.add.text(260, 10, '得分：0', { fontSize: '18px', fill: '#000' });
-
-  // 点击事件
-  this.input.on('pointerdown', (pointer) => {
-    const clickedX = pointer.x;
-    const clickedY = pointer.y;
-
-    for (let i = 0; i < differencePoints.length; i++) {
-      const pt = differencePoints[i];
-      const dx = Math.abs(clickedX - pt.x);
-      const dyTop = Math.abs(clickedY - pt.y);
-      const dyBottom = Math.abs(clickedY - (pt.y + 250)); // 下图偏移250
-
-      if (dx < 25 && (dyTop < 25 || dyBottom < 25) && !foundPoints.includes(i)) {
-        foundPoints.push(i);
-        score++;
-        scoreText.setText('得分：' + score);
-        this.add.circle(pt.x, pt.y, 10, 0xff0000).setAlpha(0.6);
-        this.add.circle(pt.x, pt.y + 250, 10, 0xff0000).setAlpha(0.6);
-      }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>97 Encontre as Diferenças</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      background: #f0f0f0; height: 100%;
+      font-family: Arial, sans-serif;
     }
-  });
+    #game-container { width: 100vw; height: 100vh; }
+    canvas { display: block; width: 100% !important; height: 100% !important; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+</head>
+<body>
+  <div id="game-container"></div>
 
-  // 倒计时
-  this.time.addEvent({
-    delay: 1000,
-    callback: () => {
-      timeLeft--;
-      timerText.setText('时间：' + timeLeft);
-      if (timeLeft <= 0) {
-        this.input.off('pointerdown');
-        this.add.text(100, 270, '游戏结束！得分：' + score, {
-          fontSize: '20px', fill: '#000'
-        });
+  <script>
+    const BASE_WIDTH  = 360;
+    const BASE_HEIGHT = 720;
+
+    const IMAGE_AR     = 907 / 1080;        
+    const IMAGE_H_BASE = BASE_WIDTH * IMAGE_AR; 
+
+    const BAR_H_BASE   = 40;
+    const PADDING_BASE = 12;
+    const HIT_RADIUS_BASE = 25;
+
+    const DPR = Math.min(window.devicePixelRatio || 1, 3);
+
+    const config = {
+      type: Phaser.AUTO,
+      parent: 'game-container',
+      resolution: DPR,      
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: BASE_WIDTH,
+        height: BASE_HEIGHT
+      },
+      backgroundColor: '#f0f0f0',
+      render: { antialias: true, pixelArt: false },
+      scene: { preload, create }
+    };
+
+    let timeLeft = 60;
+    let score = 0;
+    let gameOver = false;
+
+    let timerText, scoreText, titleText;
+    let topImage, bottomImage;
+    let topY0, bottomY0;
+    let hitRadiusWorld;
+    let timerEvt;
+
+    const differencePointsBase = [
+      { x: 100, y: 120 },
+      { x: 250, y: 300 },
+      { x: 180, y: 180 }
+    ];
+
+    let points = differencePointsBase.map(p => ({
+      u: p.x / BASE_WIDTH,
+      v: p.y / IMAGE_H_BASE
+    }));
+    const foundSet = new Set();
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+      // 请确保两张图均为 1080×907
+      this.load.image('topImage',    'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/97a.png');
+      this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/97b.png');
+
+      this.load.atlas('flares',
+        'https://labs.phaser.io/assets/particles/flares.png',
+        'https://labs.phaser.io/assets/particles/flares.json'
+      );
+    }
+
+    function create() {
+      const scene = this;
+      const sw = this.scale.width;
+      const sh = this.scale.height;
+      const scaleX = sw / BASE_WIDTH;
+      const scaleY = sh / BASE_HEIGHT;
+
+      hitRadiusWorld = HIT_RADIUS_BASE * scaleX;
+
+      const topH = sw * IMAGE_AR;  // = sw * (907/1080)
+      topImage = this.add.image(sw / 2, topH / 2, 'topImage')
+                         .setDisplaySize(sw, topH);
+      topY0 = topImage.y - topImage.displayHeight / 2;
+
+      const barH = BAR_H_BASE * scaleY;
+      const padding = PADDING_BASE * scaleX;
+      const barTop = topY0 + topImage.displayHeight;
+      const barCenter = barTop + barH / 2;
+      this.add.rectangle(sw / 2, barCenter, sw, barH, 0x009739).setOrigin(0.5);
+
+      const styleSmall = { fontFamily: 'Arial', fontSize: '14px', color: '#FFD700', fontStyle: 'bold' };
+      const styleTitle = { fontFamily: 'Arial', fontSize: '18px', color: '#FFD700', fontStyle: 'bold' };
+
+      timerText = this.add.text(padding, barCenter, 'TMP: 60', styleSmall).setOrigin(0, 0.5);
+      scoreText = this.add.text(sw - padding, barCenter, 'PTS: 0', styleSmall).setOrigin(1, 0.5);
+      titleText = this.add.text(sw / 2, barCenter, '97 Diferenças', styleTitle).setOrigin(0.5, 0.5);
+
+      function layoutHeader() {
+        const y = barCenter;
+        timerText.setY(y);
+        scoreText.setY(y);
+        const leftEdge  = timerText.x + timerText.width;
+        const rightEdge = scoreText.x - scoreText.width;
+        const mid = (leftEdge + rightEdge) / 2;
+        titleText.setPosition(mid, y);
       }
-    },
-    loop: true
-  });
-}
+      layoutHeader();
 
-function update() {
-  // 暂无动画逻辑
-}
+      const bottomH = sw * IMAGE_AR; 
+      const bottomTop = barTop + barH;
+      bottomImage = this.add.image(sw / 2, bottomTop + bottomH / 2, 'bottomImage')
+                            .setDisplaySize(sw, bottomH);
+      bottomY0 = bottomImage.y - bottomImage.displayHeight / 2;
+
+      this.input.on('pointerdown', (pointer) => {
+        if (gameOver) return;
+        const mx = pointer.x, my = pointer.y;
+
+        for (let i = 0; i < points.length; i++) {
+          if (foundSet.has(i)) continue;
+          const { u, v } = points[i];
+          const px = u * sw;
+          const pyTop    = topY0    + v * topImage.displayHeight;
+          const pyBottom = bottomY0 + v * bottomImage.displayHeight;
+
+          const hit = (Phaser.Math.Distance.Between(mx, my, px, pyTop) <= hitRadiusWorld) ||
+                      (Phaser.Math.Distance.Between(mx, my, px, pyBottom) <= hitRadiusWorld);
+
+          if (hit) {
+            foundSet.add(i);
+            score++;
+            scoreText.setText('PTS: ' + score);
+            drawHit.call(scene, px, pyTop);
+            drawHit.call(scene, px, pyBottom);
+            layoutHeader();
+            if (score >= points.length) endGame.call(scene, true);
+            return;
+          }
+        }
+      });
+
+      timerEvt = this.time.addEvent({
+        delay: 1000,
+        loop: true,
+        callback: () => {
+          if (gameOver) return;
+          timeLeft--;
+          timerText.setText('TMP: ' + timeLeft);
+          timerText.setColor(timeLeft <= 10 ? '#ff0000' : '#FFD700');
+          layoutHeader();
+          if (timeLeft <= 0) endGame.call(scene, false);
+        }
+      });
+    }
+
+    function drawHit(x, y) {
+      const r = Math.max(10, hitRadiusWorld * 0.5);
+      const fill = this.add.circle(x, y, r, 0xff0000, 0.6);
+      const ring = this.add.circle(x, y, r + 4, 0xff0000, 0).setStrokeStyle(2, 0xff0000, 0.9);
+      this.tweens.add({ targets: ring, scale: 1.4, alpha: 0, duration: 500, onComplete: () => ring.destroy() });
+    }
+
+    function endGame(win) {
+      if (gameOver) return;
+      gameOver = true;
+      this.input.enabled = false;
+      if (timerEvt) { timerEvt.remove(false); timerEvt = null; }
+
+      const sw = this.scale.width, sh = this.scale.height;
+      const msg = win ? `🎉 Fim de jogo!\nPTS: ${score}/${points.length} 🎉`
+                      : `⏱️ Tempo esgotado!\nPTS: ${score}/${points.length}`;
+
+      this.add.text(sw / 2, sh * 0.5, msg, {
+        fontSize: '22px', fill: '#ffffff',
+        backgroundColor: win ? '#4CAF50' : '#ff5252',
+        align: 'center', padding: { x: 12, y: 10 }
+      }).setOrigin(0.5);
+
+      const particles = this.add.particles('flares');
+      const emitter = particles.createEmitter({
+        frame: ['red', 'green', 'blue', 'yellow'],
+        x: { min: 0, max: sw }, y: 0,
+        lifespan: 2000, speedY: { min: 200, max: 400 },
+        scale: { start: 0.5, end: 0 }, quantity: 4, blendMode: 'ADD'
+      });
+      this.time.delayedCall(3000, () => { emitter.stop(); this.time.delayedCall(1000, () => particles.destroy()); });
+    }
+  </script>
+</body>
+</html>
