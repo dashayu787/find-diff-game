@@ -25,8 +25,8 @@ let foundPoints = [];
 const game = new Phaser.Game(config);
 
 function preload() {
-  this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
-  this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
+  this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png');
+  this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png');
 }
 
 function create() {
