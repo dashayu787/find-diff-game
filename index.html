@@ -24,13 +24,12 @@
   <div id="game-container"></div>
 
   <script>
-    // ---------------- 基本配置 ----------------
     const BASE_WIDTH  = 360;
     const BASE_HEIGHT = 720;
-    const IMAGE_H_RATIO = 0.42;   // 每张图占屏幕高度的 42%
-    const BAR_H_BASE   = 40;      // 绿色条基础高度（会随屏幕缩放）
-    const PADDING_BASE = 12;      // 绿色条内边距
-    const HIT_RADIUS_BASE = 25;   // 命中半径（会随屏幕缩放）
+    const IMAGE_H_RATIO = 0.42;   
+    const BAR_H_BASE   = 40;       
+    const PADDING_BASE = 12;      
+    const HIT_RADIUS_BASE = 25;   
 
     const config = {
       type: Phaser.AUTO,
@@ -45,18 +44,16 @@
       scene: { preload, create }
     };
 
-    // ---------------- 游戏状态 ----------------
     let timeLeft = 60;
     let score = 0;
     let gameOver = false;
 
     let timerText, scoreText, titleText;
     let topImage, bottomImage;
-    let topY0, bottomY0; // 两张图的顶部 y
+    let topY0, bottomY0;  
     let hitRadiusWorld;
     let timerEvt;
 
-    // 差异点（按你原来的“上图”坐标，先转为 0..1）
     const differencePointsBase = [
       { x: 100, y: 120 },
       { x: 250, y: 300 },
@@ -71,7 +68,6 @@
     const game = new Phaser.Game(config);
 
     function preload() {
-      // 注意：你的图片地址是 .png.png，如非刻意请改成 .png
       this.load.image('topImage',    'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
       this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
       this.load.atlas('flares',
@@ -89,50 +85,44 @@ function create() {
 
   hitRadiusWorld = HIT_RADIUS_BASE * scaleX;
 
-  // 上图
   const topH = sh * IMAGE_H_RATIO;
   topImage = this.add.image(sw / 2, topH / 2, 'topImage')
                      .setDisplaySize(sw, topH);
   topY0 = topImage.y - topImage.displayHeight / 2;
 
-  // 绿色条（与上图左右齐边，紧贴上图底部）
   const barH = BAR_H_BASE * scaleY;
   const padding = PADDING_BASE * scaleX;
   const barTop = topY0 + topImage.displayHeight;
   const barCenter = barTop + barH / 2;
   this.add.rectangle(sw / 2, barCenter, sw, barH, 0x009739).setOrigin(0.5);
 
-  // —— 一行文字：左(倒计时) — 中(标题) — 右(得分) ——
   const styleSmall = { fontFamily: 'Arial', fontSize: '14px', color: '#FFD700', fontStyle: 'bold' };
   const styleTitle = { fontFamily: 'Arial', fontSize: '18px', color: '#FFD700', fontStyle: 'bold' };
 
   timerText = this.add.text(padding, barCenter, 'TMP: 60', styleSmall)
-                      .setOrigin(0, 0.5);     // 左对齐 + 垂直居中
+                      .setOrigin(0, 0.5);     
   scoreText = this.add.text(sw - padding, barCenter, 'PTS: 0', styleSmall)
-                      .setOrigin(1, 0.5);     // 右对齐 + 垂直居中
+                      .setOrigin(1, 0.5);     
   titleText = this.add.text(sw / 2, barCenter, '97 Diferenças', styleTitle)
-                      .setOrigin(0.5, 0.5);   // 居中
+                      .setOrigin(0.5, 0.5);   
 
-  // 让标题始终位于“倒计时”和“得分”的中点（保持一行对齐）
   function layoutHeader() {
     const y = barCenter;
     timerText.setY(y);
     scoreText.setY(y);
-    const leftEdge  = timerText.x + timerText.width;       // 左侧文字的右边界
-    const rightEdge = scoreText.x - scoreText.width;       // 右侧文字的左边界
-    const mid = (leftEdge + rightEdge) / 2;                // 两者中点
-    titleText.setPosition(mid, y);                         // 标题放在中点
+    const leftEdge  = timerText.x + timerText.width;       
+    const rightEdge = scoreText.x - scoreText.width;       
+    const mid = (leftEdge + rightEdge) / 2;               
+    titleText.setPosition(mid, y);                         
   }
   layoutHeader();
 
-  // 下图（与绿色条下边紧贴）
   const bottomH = sh * IMAGE_H_RATIO;
   const bottomTop = barTop + barH;
   bottomImage = this.add.image(sw / 2, bottomTop + bottomH / 2, 'bottomImage')
                         .setDisplaySize(sw, bottomH);
   bottomY0 = bottomImage.y - bottomImage.displayHeight / 2;
 
-  // 点击命中
   this.input.on('pointerdown', (pointer) => {
     if (gameOver) return;
     const mx = pointer.x, my = pointer.y;
@@ -153,14 +143,13 @@ function create() {
         scoreText.setText('PTS: ' + score);
         drawHit.call(scene, px, pyTop);
         drawHit.call(scene, px, pyBottom);
-        layoutHeader(); // 分数变化后重新排版（保持一行）
+        layoutHeader();
         if (score >= points.length) endGame.call(scene, true);
         return;
       }
     }
   });
 
-  // 计时
   timerEvt = this.time.addEvent({
     delay: 1000,
     loop: true,
@@ -169,13 +158,12 @@ function create() {
       timeLeft--;
       timerText.setText('TMP: ' + timeLeft);
       timerText.setColor(timeLeft <= 10 ? '#ff0000' : '#FFD700');
-      layoutHeader(); // 文本变更后重新排版（保持一行）
+      layoutHeader(); 
       if (timeLeft <= 0) endGame.call(scene, false);
     }
   });
 }
 
-    // 画命中标记
     function drawHit(x, y) {
       const r = Math.max(10, hitRadiusWorld * 0.5);
       const fill = this.add.circle(x, y, r, 0xff0000, 0.6);
@@ -183,7 +171,6 @@ function create() {
       this.tweens.add({ targets: ring, scale: 1.4, alpha: 0, duration: 500, onComplete: () => ring.destroy() });
     }
 
-    // 结束
     function endGame(win) {
       if (gameOver) return;
       gameOver = true;
