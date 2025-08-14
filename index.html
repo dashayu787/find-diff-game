@@ -1,3 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>97 Encontre as Diferenças</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #f0f0f0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+    #game-container { width: 100vw; height: 100vh; }
+    canvas { display: block; width: 100% !important; height: 100% !important; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <script>
+    // ---------------- 基本配置 ----------------
+    const BASE_WIDTH  = 360;
+    const BASE_HEIGHT = 720;
+    const IMAGE_H_RATIO = 0.42;   // 每张图占屏幕高度的 42%
+    const BAR_H_BASE   = 40;      // 绿色条基础高度（会随屏幕缩放）
+    const PADDING_BASE = 12;      // 绿色条内边距
+    const HIT_RADIUS_BASE = 25;   // 命中半径（会随屏幕缩放）
+
+    const config = {
+      type: Phaser.AUTO,
+      parent: 'game-container',
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: BASE_WIDTH,
+        height: BASE_HEIGHT
+      },
+      backgroundColor: '#f0f0f0',
+      scene: { preload, create }
+    };
+
+    // ---------------- 游戏状态 ----------------
+    let timeLeft = 60;
+    let score = 0;
+    let gameOver = false;
+
+    let timerText, scoreText, titleText;
+    let topImage, bottomImage;
+    let topY0, bottomY0; // 两张图的顶部 y
+    let hitRadiusWorld;
+    let timerEvt;
+
+    // 差异点（按你原来的“上图”坐标，先转为 0..1）
+    const differencePointsBase = [
+      { x: 100, y: 120 },
+      { x: 250, y: 300 },
+      { x: 180, y: 180 }
+    ];
+    const points = differencePointsBase.map(p => ({
+      u: p.x / BASE_WIDTH,
+      v: p.y / (BASE_HEIGHT * IMAGE_H_RATIO)
+    }));
+    const foundSet = new Set();
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+      // 注意：你的图片地址是 .png.png，如非刻意请改成 .png
+      this.load.image('topImage',    'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
+      this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
+      this.load.atlas('flares',
+        'https://labs.phaser.io/assets/particles/flares.png',
+        'https://labs.phaser.io/assets/particles/flares.json'
+      );
+    }
+
 function create() {
   const scene = this;
   const sw = this.scale.width;
@@ -92,3 +174,41 @@ function create() {
     }
   });
 }
+
+    // 画命中标记
+    function drawHit(x, y) {
+      const r = Math.max(10, hitRadiusWorld * 0.5);
+      const fill = this.add.circle(x, y, r, 0xff0000, 0.6);
+      const ring = this.add.circle(x, y, r + 4, 0xff0000, 0).setStrokeStyle(2, 0xff0000, 0.9);
+      this.tweens.add({ targets: ring, scale: 1.4, alpha: 0, duration: 500, onComplete: () => ring.destroy() });
+    }
+
+    // 结束
+    function endGame(win) {
+      if (gameOver) return;
+      gameOver = true;
+      this.input.enabled = false;
+      if (timerEvt) { timerEvt.remove(false); timerEvt = null; }
+
+      const sw = this.scale.width, sh = this.scale.height;
+      const msg = win ? `🎉 Fim de jogo!\nPTS: ${score}/${points.length} 🎉`
+                      : `⏱️ Tempo esgotado!\nPTS: ${score}/${points.length}`;
+
+      this.add.text(sw / 2, sh * 0.5, msg, {
+        fontSize: '22px', fill: '#ffffff',
+        backgroundColor: win ? '#4CAF50' : '#ff5252',
+        align: 'center', padding: { x: 12, y: 10 }
+      }).setOrigin(0.5);
+
+      const particles = this.add.particles('flares');
+      const emitter = particles.createEmitter({
+        frame: ['red', 'green', 'blue', 'yellow'],
+        x: { min: 0, max: sw }, y: 0,
+        lifespan: 2000, speedY: { min: 200, max: 400 },
+        scale: { start: 0.5, end: 0 }, quantity: 4, blendMode: 'ADD'
+      });
+      this.time.delayedCall(3000, () => { emitter.stop(); this.time.delayedCall(1000, () => particles.destroy()); });
+    }
+  </script>
+</body>
+</html>
