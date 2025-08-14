@@ -1,3 +1,32 @@
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  parent: 'game-container',
+  scene: {
+    preload,
+    create
+  }
+};
+
+let timerText;
+let scoreText;
+let timeLeft = 60;
+let score = 0;
+let differencePoints = [
+  { x: 120, y: 150 },
+  { x: 300, y: 200 },
+  { x: 500, y: 250 },
+  { x: 220, y: 380 },
+  { x: 450, y: 120 },
+  { x: 650, y: 200 },
+  { x: 600, y: 400 },
+  { x: 350, y: 320 }
+];
+let foundPoints = [];
+
+const game = new Phaser.Game(config);
+
 function preload() {
   this.load.image('leftImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
   this.load.image('rightImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
