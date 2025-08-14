@@ -24,6 +24,8 @@
       height: 100% !important;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
 </head>
 <body>
   <div id="game-container"></div>
@@ -45,6 +47,7 @@
 
     let timerText;
     let scoreText;
+    let titleText;
     let timeLeft = 60;
     let score = 0;
     let differencePoints = [
@@ -59,6 +62,7 @@
     function preload() {
       this.load.image('topImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_a.png.png');
       this.load.image('bottomImage', 'https://cdn.jsdelivr.net/gh/dashayu787/my-image-cdn/img/level1_b.png.png');
+      this.load.atlas('flares', 'https://labs.phaser.io/assets/particles/flares.png', 'https://labs.phaser.io/assets/particles/flares.json');
     }
 
     function create() {
@@ -75,13 +79,17 @@
       this.add.image(sw / 2, sh * 0.75, 'bottomImage')
           .setDisplaySize(sw, sh * 0.45);
 
-      timerText = this.add.text(sw * 0.1, sh * 0.48, 'Tempo: 60', {
-        fontSize: '18px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
+      timerText = this.add.text(sw * 0.05, sh * 0.48, 'Tempo: 60', {
+        fontSize: '16px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
       }).setOrigin(0);
 
-      scoreText = this.add.text(sw * 0.55, sh * 0.48, 'Pontuação: 0', {
-        fontSize: '18px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
-      }).setOrigin(0);
+      titleText = this.add.text(sw * 0.5, sh * 0.48, '97 Diferenças', {
+        fontSize: '18px', fill: '#1a237e', backgroundColor: '#bbdefb', padding: 6
+      }).setOrigin(0.5);
+
+      scoreText = this.add.text(sw * 0.95, sh * 0.48, 'Pontuação: 0', {
+        fontSize: '16px', fill: '#2e7d32', backgroundColor: '#c8e6c9', padding: 6
+      }).setOrigin(1, 0);
 
       this.input.on('pointerdown', (pointer) => {
         const clickedX = pointer.x / scaleX;
@@ -114,8 +122,9 @@
           timerText.setText('Tempo: ' + timeLeft);
           if (timeLeft <= 0) {
             this.input.off('pointerdown');
+
             const endText = this.add.text(sw / 2, sh * 0.5, '🎉 Fim de jogo!\nPontuação: ' + score + ' 🎉', {
-              fontSize: '22px', fill: '#d84315', backgroundColor: '#ffe082', align: 'center', padding: 10
+              fontSize: '22px', fill: '#ffffff', backgroundColor: '#ff5252', align: 'center', padding: 10
             }).setOrigin(0.5);
 
             this.tweens.add({
@@ -124,6 +133,23 @@
               alpha: { from: 0, to: 1 },
               duration: 600,
               ease: 'Bounce.easeOut'
+            });
+
+            // 添加礼花粒子效果
+            const particles = this.add.particles('flares');
+            const emitter = particles.createEmitter({
+              frame: ['red', 'green', 'blue', 'yellow'],
+              x: { min: 0, max: sw },
+              y: 0,
+              lifespan: 2000,
+              speedY: { min: 200, max: 400 },
+              scale: { start: 0.5, end: 0 },
+              quantity: 4,
+              blendMode: 'ADD'
+            });
+
+            this.time.delayedCall(3000, () => {
+              emitter.stop();
             });
           }
         },
